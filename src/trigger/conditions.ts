@@ -60,7 +60,7 @@ export function myWifeOfGroup(param: TriggerParameter): boolean {
 /**
  * ChatGPT条件
  */
-export function chatGPT(param: TriggerParameter): boolean {
+export function aiReply(param: TriggerParameter): boolean {
   const userId = param.cqParam.user_id.toString();
   const blockAccounts = getEnv('block.account');
   

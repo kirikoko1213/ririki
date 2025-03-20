@@ -159,17 +159,6 @@ export async function aiSetting(param: TriggerParameter): Promise<string> {
   }
 }
 
-/**
- * ChatGPT响应
- */
-export async function chatGPT(param: TriggerParameter): Promise<string> {
-  const message = param.cqParam.krMessage;
-  const groupId = param.cqParam.group_id;
-  
-  // 这里应该实现与ChatGPT API的集成
-  // 为了示例，返回简单的回复
-  return `你问的是: ${message}\n我是AI助手，目前正在开发中...`;
-}
 
 /**
  * 重复消息响应

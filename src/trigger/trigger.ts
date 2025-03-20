@@ -1,3 +1,4 @@
+import { aiReply } from './ai-reply';
 import { TriggerParameter } from '../models/param';
 import * as responders from './responders';
 
@@ -87,8 +88,8 @@ export function initTriggers(): void {
   // AI角色设置
   addTrigger(MESSAGE_TYPES.AT, responders.conditions.aiSetting, responders.aiSetting);
   
-  // ChatGPT
-  addTrigger(MESSAGE_TYPES.AT, responders.conditions.chatGPT, responders.chatGPT);
+  // AI回复
+  addTrigger(MESSAGE_TYPES.AT, responders.conditions.aiReply, aiReply);
   
   // 重复
   addTrigger(MESSAGE_TYPES.GR, responders.conditions.repeat, responders.repeat);

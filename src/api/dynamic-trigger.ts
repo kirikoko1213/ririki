@@ -1,19 +1,8 @@
 import { Request, Response } from 'express';
-import { getRedisClient } from '../config/redis';
+import { getConnection } from '../config/database';
+import { DynamicTrigger } from '../models/entities/DynamicTrigger';
 import { resetTriggers } from '../trigger/trigger';
 import logger from '../utils/logger';
-
-// 定义动态触发器结构
-interface DynamicTrigger {
-  id: string;
-  name: string;
-  messageType: string;
-  condition: string;
-  response: string;
-  enabled: boolean;
-  createdAt: number;
-  updatedAt: number;
-}
 
 /**
  * 动态触发器API
@@ -24,17 +13,12 @@ export const dynamicTriggerAPI = {
    */
   list: async (req: Request, res: Response): Promise<void> => {
     try {
-      const redis = getRedisClient();
-      const keys = await redis.keys('trigger:dynamic:*');
-      
-      const triggers: DynamicTrigger[] = [];
-      
-      for (const key of keys) {
-        const value = await redis.get(key);
-        if (value) {
-          triggers.push(JSON.parse(value));
-        }
-      }
+      const connection = getConnection();
+      const triggers = await connection
+        .getRepository(DynamicTrigger)
+        .find({
+          order: { createdAt: 'DESC' }
+        });
       
       res.json({ success: true, triggers });
     } catch (error) {
@@ -55,27 +39,38 @@ export const dynamicTriggerAPI = {
         return;
       }
       
-      const now = Date.now();
-      const triggerId = id || `${now}`;
+      const connection = getConnection();
+      const repository = connection.getRepository(DynamicTrigger);
       
-      const trigger: DynamicTrigger = {
-        id: triggerId,
-        name,
-        messageType,
-        condition,
-        response,
-        enabled: enabled !== false,
-        createdAt: id ? (req.body.createdAt || now) : now,
-        updatedAt: now
-      };
-      
-      const redis = getRedisClient();
-      await redis.set(`trigger:dynamic:${triggerId}`, JSON.stringify(trigger));
+      if (id) {
+        // 更新现有触发器
+        await repository.update(id, {
+          name,
+          messageType,
+          condition,
+          response,
+          enabled: enabled !== false,
+          updatedAt: Date.now()
+        });
+      } else {
+        // 创建新触发器
+        const trigger = repository.create({
+          id: Date.now().toString(),
+          name,
+          messageType,
+          condition,
+          response,
+          enabled: enabled !== false,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
+        await repository.save(trigger);
+      }
       
       // 重置触发器
       resetTriggers();
       
-      res.json({ success: true, trigger });
+      res.json({ success: true });
     } catch (error) {
       logger.error('保存动态触发器失败:', error);
       res.status(500).json({ error: '保存动态触发器失败' });
@@ -94,8 +89,8 @@ export const dynamicTriggerAPI = {
         return;
       }
       
-      const redis = getRedisClient();
-      await redis.del(`trigger:dynamic:${id}`);
+      const connection = getConnection();
+      await connection.getRepository(DynamicTrigger).delete(id);
       
       // 重置触发器
       resetTriggers();
@@ -119,15 +114,15 @@ export const dynamicTriggerAPI = {
         return;
       }
       
-      const redis = getRedisClient();
-      const value = await redis.get(`trigger:dynamic:${id}`);
+      const connection = getConnection();
+      const trigger = await connection.getRepository(DynamicTrigger).findOneBy({ id });
       
-      if (!value) {
+      if (!trigger) {
         res.status(404).json({ error: '未找到指定的动态触发器' });
         return;
       }
       
-      res.json({ success: true, trigger: JSON.parse(value) });
+      res.json({ success: true, trigger });
     } catch (error) {
       logger.error('查找动态触发器失败:', error);
       res.status(500).json({ error: '查找动态触发器失败' });

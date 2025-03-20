@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import { MessageRecord } from '../models/entities/MessageRecord';
+import { DynamicTrigger } from '../models/entities/DynamicTrigger';
 import { getEnv } from './env';
 import path from 'path';
 import 'reflect-metadata';
@@ -17,7 +18,7 @@ export const AppDataSource = new DataSource({
   logging: getEnv('node.env') !== 'production',
   entities: [
     MessageRecord,
-    // 添加其他实体
+    DynamicTrigger,
   ],
   migrations: [path.join(__dirname, '../migrations/*.{ts,js}')],
 });
